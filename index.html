@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Code Quest: C++ и Arduino</title>
+<style>
+:root{--bg:#f4f5f9;--card:#fff;--tx:#1b1d2a;--mut:#6b7085;--ac:#5b5ef4;--ok:#17a34a;--bad:#e11d48;--code:#12141f;--codetx:#c9f2c7;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13141c;--card:#1e2030;--tx:#eceefb;--mut:#9a9fb8;--ac:#7c7ff7}}
+:root[data-theme="dark"]{--bg:#13141c;--card:#1e2030;--tx:#eceefb;--mut:#9a9fb8;--ac:#7c7ff7}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#app{max-width:520px;margin:0 auto;padding:16px}
+h1{font-size:26px;margin:8px 0 2px}.sub{color:var(--mut);margin:0 0 16px}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.stats{display:flex;gap:8px;margin-bottom:14px}.stats div{flex:1;background:var(--card);border-radius:14px;padding:10px;text-align:center}
+.stats b{display:block;font-size:20px}.stats span{font-size:12px;color:var(--mut)}
+button{font:inherit;border:0;cursor:pointer;color:var(--tx)}
+.mode{display:block;width:100%;text-align:left;background:var(--card);border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.mode b{display:block;font-size:17px}.mode small{color:var(--mut)}
+.bar{height:8px;background:rgba(127,127,127,.25);border-radius:6px;overflow:hidden;margin:6px 0 12px}.bar i{display:block;height:100%;background:var(--ac);transition:width .3s}
+.top{display:flex;justify-content:space-between;align-items:center;font-weight:600}
+pre{background:var(--code);color:var(--codetx);border-radius:12px;padding:12px;margin:10px 0;overflow-x:auto;font:14px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
+.q{font-size:18px;font-weight:600;margin:6px 0}
+.opt{display:block;width:100%;text-align:left;background:var(--card);border-radius:14px;padding:13px;margin-bottom:8px;border:2px solid transparent;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.opt.ok{border-color:var(--ok);background:rgba(23,163,74,.15)}.opt.bad{border-color:var(--bad);background:rgba(225,29,72,.14)}
+.why{border-left:4px solid var(--ac);padding:10px 12px;margin:10px 0;background:var(--card);border-radius:0 12px 12px 0}
+.main{display:block;width:100%;background:var(--ac);color:#fff;border-radius:14px;padding:14px;font-weight:700;margin-top:6px}
+.ghost{display:block;width:100%;background:none;color:var(--mut);padding:12px}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:8px;background:var(--ac);color:#fff}
+.pop{animation:p .3s}@keyframes p{50%{transform:scale(1.05)}}
+.big{font-size:56px;text-align:center}
+</style></head><body><div id="app"></div>
+<script>
+// [теги, код, вопрос, верный, неверный1, неверный2, неверный3, пояснение]  теги: c=C++, a=Arduino, b=поиск ошибки
+const Q=[
+["c","cin >> x;","Что делает эта строка?","Считывает значение с клавиатуры в x","Выводит x на экран","Объявляет переменную x","Завершает программу","cin >> читает ввод с клавиатуры. Вывод — это cout <<."],
+["c","double heightM = heightCm / 100.0;","Почему написано 100.0, а не 100?","Чтобы деление было дробным: 175 / 100.0 = 1.75","Чтобы число занимало меньше памяти","Это требование типа double для констант","Без разницы, результат тот же","Если делить int на int, дробная часть отбрасывается и получится 1."],
+["c","char firstLetter = 'R';","Почему буква в char латинская?","char занимает 1 байт, кириллица в нём не помещается","Компилятор не любит русские буквы","Кириллица работает только в string","Так красивее","char = 1 байт. Для русских букв нужен string."],
+["c","const int MAX_SCORE = 100;\nMAX_SCORE = 5;","Что произойдёт?","Ошибка компиляции: константу нельзя менять","Значение станет 5","Значение останется 100, ошибки нет","Программа упадёт при запуске","const = значение менять нельзя, это ловит компилятор."],
+["c","sot = (n / 100) % 10;  // n = 5274","Чему равно sot?","2","5","52","4","5274 / 100 = 52, а 52 % 10 = 2. % даёт остаток."],
+["c","edin = n % 10;  // n = 5274","Чему равно edin?","4","7","5","527","Остаток от деления на 10 — последняя цифра."],
+["c","int a = 7, b = 2;\ncout << a / b;","Что выведет программа?","3","3.5","4","3.0","Оба числа int, значит деление целочисленное: 7 / 2 = 3."],
+["c","if (a % 2 == 0) cout << \"чётное\";","Что проверяет условие?","Что остаток от деления на 2 равен нулю","Что a равно двум","Что a делится на 10","Присваивает a значение 0","== сравнивает, одиночное = присваивает."],
+["b,c","else if (ocenka >+ 70) { ... }","Найди ошибку","Должно быть >=, а >+ читается как > +70","Нужно поставить ;","Нужно else вместо else if","Здесь нет ошибки","Из-за опечатки ровно 70 баллов попадёт в следующую ветку."],
+["b,c","sum = tys + sot + des;\n// n = 5274, ожидаем сумму цифр 18","Почему программа выдаст 14, а не 18?","Не прибавлена цифра единиц edin","Неверно посчитаны тысячи","Нужен тип double","sum нельзя использовать как имя","Нужно: sum = tys + sot + des + edin;"],
+["b,c","<< \", столбец \" << +1 <<\n// нужно показать номер столбца максимума","Почему всегда печатается столбец 1?","Вместо maxCol + 1 написано просто +1","Массив считается с единицы","Не хватает endl","Забыли подключить iostream","Должно быть << maxCol + 1. Плюс 1 нужен, т.к. индексы с нуля."],
+["c","long long product = 1;","Почему произведение стартует с 1, а не с 0?","С нулём всё произведение стало бы 0","1 — это адрес памяти","Так требует long long","Разницы нет","1 — нейтральный элемент умножения (для суммы это 0)."],
+["c","for (int j = 1; j <= N - i; j++) cout << \" \";","Что делает этот цикл в треугольнике?","Печатает N − i пробелов слева, сдвигая звёзды к центру","Печатает звёздочки","Переводит строку","Считает сумму","Чем ниже строка, тем меньше пробелов."],
+["c","j <= 2 * i - 1   // i = 4","Сколько звёздочек в 4-й строке?","7","8","4","9","Строки дают 1, 3, 5, 7, 9... нечётные числа."],
+["c","double average = (double) sum / SIZE;","Зачем нужен (double)?","Иначе деление было бы целочисленным","Чтобы ускорить программу","Чтобы sum не менялась","Это комментарий","Приведение типа: sum становится дробной до деления."],
+["c","sumSide += a[i][n - 1 - i];","Какую диагональ считает строка?","Побочную (i + j = n − 1)","Главную","Первую строку","Последний столбец","Для строки 0 берётся столбец 3, для строки 1 столбец 2..."],
+["c","a[i][j] = rand() % 20 + 1;","Какие числа получаются?","От 1 до 20","От 0 до 20","От 0 до 19","От 1 до 19","rand() % 20 даёт 0–19, + 1 сдвигает на 1–20."],
+["c","srand(time(0));","Зачем нужна эта строка?","Чтобы при каждом запуске числа были разные","Чтобы замерить время работы","Чтобы программа ждала","Чтобы очистить экран","Без неё rand() выдаёт одну и ту же последовательность."],
+["c","if (n <= 1) { return 1; }  // в factorial","Как это называется в рекурсии?","Условие выхода","Шаг рекурсии","Прототип","Инициализация","Без условия выхода функция вызывала бы себя бесконечно."],
+["c","fibonacci(n-1) + fibonacci(n-2)\n// F(0)=0, F(1)=1","Чему равно F(5)?","5","8","3","13","0, 1, 1, 2, 3, 5 — шестой член последовательности, F(5) = 5."],
+["c","continue;","Что делает continue в цикле?","Пропускает остаток итерации и идёт к следующей","Выходит из цикла","Завершает программу","Повторяет итерацию дважды","break выходит из цикла, continue только пропускает остаток."],
+["c","getline(cin, fullName);","Чем getline лучше cin >> для ФИО?","Читает строку целиком, вместе с пробелами","Работает быстрее","Читает только число","Печатает строку","cin >> остановится на первом пробеле."],
+["c","cout << \"Введите имя: \";","Зачем здесь нет endl?","Чтобы ввод шёл в той же строке, что приглашение","Это ошибка","Чтобы не было пробела","Чтобы очистить экран","endl переводит строку, а приглашение лучше оставить в строке."],
+["a","void setup() { ... }","Когда выполняется setup()?","Один раз при старте","Бесконечно","Только по кнопке","Каждую секунду","Один раз в setup, бесконечно повторяется loop."],
+["a","analogWrite(9, 128);","Что делает эта команда?","Выводит ШИМ примерно на половину яркости","Читает значение с пина 9","Включает пин полностью","Ждёт 128 мс","ШИМ 0–255: чем больше число, тем ярче."],
+["a","Какие пины Arduino UNO умеют ШИМ?","Выбери ответ","3, 5, 6, 9, 10, 11","0, 1, 2, 3","Все цифровые пины","Только A0–A5","На плате они помечены знаком ~. На пине 8 analogWrite даёт лишь вкл/выкл."],
+["a","int v = analogRead(A0);","В каком диапазоне будет v?","0–1023","0–255","0–5","0–100","10-битный АЦП: напряжение 0–5 В разбито на 1024 уровня."],
+["a","pinMode(2, INPUT_PULLUP);\n// кнопка не нажата","Что вернёт digitalRead(2)?","1 (HIGH)","0 (LOW)","5","Ничего","Кнопка замыкает пин на землю, поэтому логика обратная: нажата = 0."],
+["a","int brightness = potValue / 4;","Зачем делить на 4?","Перевести диапазон 0–1023 в 0–255 для ШИМ","Чтобы ускорить чтение","Чтобы получить вольты","Это защита от дребезга","1024 / 4 = 256 уровней, как у analogWrite."],
+["a","if (buttonState == LOW && lastButtonState == HIGH)","Что ловит это условие?","Момент нажатия кнопки","Что кнопка удерживается","Что кнопка отпущена","Что светодиод горит","Иначе при удержании светодиод переключался бы сам."],
+["a","delay(20);  // в программе с кнопкой","Зачем здесь маленькая пауза?","Антидребезг: контакты дрожат при нажатии","Чтобы светодиод мигал","Это скорость Serial","Чтобы сэкономить ток","Дребезг даёт лишние срабатывания, пауза их пропускает."],
+["a","if (millis() - lastPrintTime >= 500) { ... }","Зачем millis() вместо delay(500)?","delay останавливает программу, а millis нет","millis точнее","delay не работает с Serial","Нет разницы","Выводим раз в 500 мс, а яркость при этом меняется плавно."],
+["a","float voltage = sensorValue * 5.0 / 1023.0;","Что получаем в voltage?","Напряжение в вольтах","Температуру","Яркость","Расстояние","Число 0–1023 переводим в 0–5 В. Для TMP36 дальше (voltage − 0.5) * 100."],
+["a","distance = duration * 0.034 / 2;","Почему делим на 2?","Сигнал шёл до предмета и обратно","Датчик измеряет половину","Переводим в метры","Это поправка на температуру","0,034 см/мкс — скорость звука."],
+["a","idx = (idx + 1) % N;","Как называется этот приём?","Кольцевой буфер: индекс возвращается к 0 после N-1","Рекурсия","Антидребезг","ШИМ","В массиве всегда последние N значений."],
+["a","int minValue = 1023;\nint maxValue = 0;","Почему минимум стартует с 1023, а максимум с 0?","Чтобы первое же измерение обновило оба","Это границы пина","Так требует Serial","Случайный выбор","Любое измерение будет меньше 1023 и больше 0."],
+["b,a","Serial.println(\" sm\");  // вывод расстояния","Найди ошибку","Подпись sm — опечатка, надо cm","Нужен print вместо println","Не хватает delay","Ошибки нет","Сантиметры — cm. Исправь везде."],
+["a","Зачем нужен резистор 220 Ом перед светодиодом?","Выбери ответ","Ограничивает ток, иначе светодиод перегорит","Увеличивает яркость","Включает ШИМ","Защищает кнопку","При 5 В получается около 14 мА."]
+];
+const MODES=[["k","📇 Карточки: значения строк","Строка → что она делает. Учи, пока не станет «знаю»"],["c","🧠 C++","Разбор программ по темам 1–9"],["a","🔌 Arduino","Темы 8–18: пины, датчики, ШИМ"],["b","🐞 Найди ошибку","Баги из ваших программ, их спросят на защите"],["all","🎲 Всё вперемешку","Случайные вопросы"]];
+let S={xp:0,best:0,wrong:[],done:0,kn:[]};
+try{const s=localStorage.getItem("cq");if(s)S=Object.assign(S,JSON.parse(s))}catch(e){}
+const save=()=>{try{localStorage.setItem("cq",JSON.stringify(S))}catch(e){}};
+const app=document.getElementById("app");
+const sh=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const lvl=()=>Math.floor(S.xp/100)+1;
+let R=null;
+function el(h){const d=document.createElement("div");d.innerHTML=h;return d}
+function home(){
+ app.innerHTML="";
+ app.append(el(`<h1>Code Quest</h1><p class="sub">Учи шпаргалку играя: 3 жизни, 10 вопросов</p>
+ <div class="stats"><div><b>${lvl()}</b><span>уровень</span></div><div><b>${S.xp}</b><span>XP</span></div><div><b>${S.best}</b><span>рекорд серии</span></div></div>
+ <div class="bar"><i style="width:${S.xp%100}%"></i></div>`));
+ MODES.forEach(m=>{const b=document.createElement("button");b.className="mode";b.innerHTML=`<b>${m[1]}</b><small>${m[2]}</small>`;b.onclick=()=>m[0]==="k"?deck():start(m[0]);app.append(b)});
+ if(S.wrong.length){const b=document.createElement("button");b.className="mode";b.innerHTML=`<b>🔁 Работа над ошибками (${S.wrong.length})</b><small>Вопросы, где ты ошибся</small>`;b.onclick=()=>start("w");app.append(b)}
+}
+function start(m){
+ let ids=Q.map((_,i)=>i);
+ if(m==="w")ids=S.wrong.filter(i=>Q[i]);
+ else if(m!=="all")ids=ids.filter(i=>Q[i][0].split(",").includes(m));
+ R={ids:sh(ids).slice(0,10),i:0,lives:3,ok:0,streak:0,xp:0};
+ if(!R.ids.length)return home();
+ ask();
+}
+function ask(){
+ const q=Q[R.ids[R.i]];
+ const opts=sh([0,1,2,3].map(k=>({t:q[3+k],c:k===0})));
+ app.innerHTML="";
+ app.append(el(`<div class="top"><span>${"❤️".repeat(R.lives)+"🖤".repeat(3-R.lives)}</span><span>🔥 ${R.streak}</span><span>${R.i+1}/${R.ids.length}</span></div><div class="bar"><i style="width:${R.i/R.ids.length*100}%"></i></div>`));
+ if(q[0].includes("b"))app.append(el(`<span class="tag">🐞 найди ошибку</span>`));
+ const pre=document.createElement("pre");pre.textContent=q[1];
+ if(!/^[^\n]*\?$/.test(q[1]) || q[1].includes(";") || q[1].includes("{"))app.append(pre);
+ const qq=document.createElement("div");qq.className="q";qq.textContent=/^[^\n]*\?$/.test(q[1])&&!q[1].includes(";")?q[1]:q[2];app.append(qq);
+ let locked=false;const btns=[];
+ opts.forEach(o=>{const b=document.createElement("button");b.className="opt";b.textContent=o.t;btns.push([b,o]);
+  b.onclick=()=>{if(locked)return;locked=true;
+   btns.forEach(([bb,oo])=>{if(oo.c)bb.classList.add("ok")});
+   const id=R.ids[R.i];
+   if(o.c){R.ok++;R.streak++;const g=10+Math.min(R.streak,5)*2;R.xp+=g;S.best=Math.max(S.best,R.streak);S.wrong=S.wrong.filter(x=>x!==id);b.classList.add("pop")}
+   else{b.classList.add("bad");R.lives--;R.streak=0;if(!S.wrong.includes(id))S.wrong.push(id)}
+   S.xp+=o.c?10+Math.min(R.streak,5)*2:0;save();
+   app.append(el(`<div class="why">${o.c?"✅ Верно! ":"❌ Не то. "}</div>`));
+   app.lastChild.append(document.createTextNode(q[7]));
+   const n=document.createElement("button");n.className="main";n.textContent=(R.lives<=0||R.i+1>=R.ids.length)?"Результат":"Дальше";
+   n.onclick=()=>{R.i++;(R.lives<=0||R.i>=R.ids.length)?end():ask()};app.append(n);n.scrollIntoView({block:"nearest"});
+  };app.append(b)});
+}
+function end(){
+ const win=R.lives>0,st=R.ok>=R.ids.length?3:R.ok>=R.ids.length*.7?2:R.ok>=R.ids.length*.4?1:0;
+ S.done++;save();app.innerHTML="";
+ app.append(el(`<div class="big">${win?"🏆":"💀"}</div><h1 style="text-align:center">${win?"Раунд пройден!":"Жизни закончились"}</h1>
+ <p class="sub" style="text-align:center">${"⭐".repeat(st)+"☆".repeat(3-st)}<br>Верно: ${R.ok} из ${R.ids.length} · +${R.xp} XP · уровень ${lvl()}</p>`));
+ const a=document.createElement("button");a.className="main";a.textContent="Ещё раунд";a.onclick=home;app.append(a);
+ if(S.wrong.length){const b=document.createElement("button");b.className="ghost";b.textContent=`Повторить ошибки (${S.wrong.length})`;b.onclick=()=>start("w");app.append(b)}
+}
+const C=[
+["c","#include <iostream>","Подключает ввод-вывод. Без него не работают cout и cin."],
+["c","using namespace std;","Позволяет писать cout, cin, endl вместо std::cout и т.д."],
+["c","int main() {","Главная функция: программа стартует с неё. int — возвращает целое."],
+["c","return 0;","Завершает программу с кодом 0, то есть «ошибок нет»."],
+["c","cout << \"текст\" << endl;","Вывести текст и перейти на новую строку. Каждый << добавляет кусок вывода."],
+["c","cin >> x;","Считать значение с клавиатуры в переменную x."],
+["c","#include <cmath>","Математическая библиотека (в темах 5–7 подключена «на всякий случай»)."],
+["c","#include <string>","Нужен для типа string."],
+["c","string fio = \"Ромаданов Я.\";","Строковая переменная сразу со значением (инициализация)."],
+["c","int age = 19;","Целое число."],
+["c","double average = 4.3;","Дробное число."],
+["c","char firstLetter = 'R';","Один символ в одинарных кавычках. 1 байт, поэтому буква латинская."],
+["c","bool isExcellent = false;","Логическая переменная. В cout выводится как 0 (ложь) или 1 (истина)."],
+["c","const int MAX_SCORE = 100;","Константа: значение менять нельзя, иначе ошибка компиляции."],
+["c","sizeof(a)","Размер переменной в байтах. Обычно int 4, double 8, char 1, bool 1."],
+["c","getline(cin, fullName);","Читает всю строку целиком, вместе с пробелами."],
+["c","#include <iomanip>","Нужен для setprecision."],
+["c","fixed << setprecision(2)","Ровно два знака после запятой."],
+["c","double heightM = heightCm / 100.0;","100.0 дробное, поэтому результат дробный (175 / 100.0 = 1.75). С 100 было бы 1."],
+["c","n1 % n2","Остаток от деления целых."],
+["c","double division = n1 / n2;  // оба int","Деление целочисленное (7 / 2 = 3): дробная часть отбрасывается ещё до записи в double."],
+["c","tys = n / 1000;","Целочисленное деление: 5274 / 1000 = 5 (тысячи)."],
+["c","sot = (n / 100) % 10;","Цифра сотен: 5274 / 100 = 52, 52 % 10 = 2."],
+["c","edin = n % 10;","Последняя цифра (единицы): 5274 % 10 = 4."],
+["c","if (a > 0) {...} else if (a < 0) {...} else {...}","Ветвление: положительное, отрицательное, иначе ноль."],
+["c","if (a % 2 == 0)","Проверка чётности. == сравнивает, одиночное = присваивает."],
+["c","ocenka < 0 || ocenka > 100","|| значит «ИЛИ». Проверка, что балл вне диапазона 0–100."],
+["c","buttonState == LOW && last == HIGH","&& значит «И»: оба условия должны выполняться."],
+["c","long long product = 1;","Большой целый тип. Произведение стартует с 1, а не с 0 (с нулём всё стало бы 0)."],
+["c","long long temp = A; A = B; B = temp;","Обмен A и B местами через временную переменную temp."],
+["c","for (long long i = A; i <= B; i++)","Цикл от A до B включительно; i++ увеличивает i на 1."],
+["c","sum += i;","То же, что sum = sum + i. Аналогично product *= i."],
+["c","for (int j = 1; j <= N - i; j++) cout << \" \";","Печатает N − i пробелов слева, сдвигая звёздочки к центру."],
+["c","j <= 2 * i - 1","Столько звёздочек в строке i: 1, 3, 5, 7, 9..."],
+["c","for (int i = N; i >= 1; i--)","Внешний цикл в обратную сторону: перевёрнутый треугольник."],
+["c","int arr[SIZE];","Массив из SIZE целых. Индексы с 0, поэтому цикл i < SIZE, а не <=."],
+["c","double average = (double) sum / SIZE;","(double) приводит сумму к дробному типу, иначе деление было бы целым."],
+["c","sumMain += a[i][i];","Главная диагональ: номер строки равен номеру столбца."],
+["c","sumSide += a[i][n - 1 - i];","Побочная диагональ: i + j = n − 1."],
+["c","a[i][j] = rand() % 20 + 1;","Числа от 1 до 20. Формула: rand() % (max - min + 1) + min."],
+["c","srand(time(0));","Задаёт начало случайных чисел по времени: при каждом запуске числа разные."],
+["c","cout << a[i][j] << \"\\t\";","\\t — табуляция, выравнивает столбцы таблицы."],
+["c","int square(int x);","Прототип функции до main: тип возврата, имя, параметры. Тело пишут ниже."],
+["c","(isEven(a) ? \"да\" : \"нет\")","Тернарный оператор: условие ? если_да : если_нет."],
+["c","if (n <= 1) { return 1; }","Условие выхода из рекурсии: 0! = 1! = 1."],
+["c","return n * factorial(n - 1);","Шаг рекурсии: функция вызывает саму себя с меньшим числом."],
+["c","fibonacci(n - 1) + fibonacci(n - 2)","Сумма двух предыдущих. F(0) = 0, F(1) = 1 (возвращаем само n)."],
+["c","break;","Немедленно выходит из цикла."],
+["c","continue;","Пропускает остаток итерации и возвращает к началу цикла."],
+["a","int ledPin = 13;","Номер пина в переменной: чтобы сменить пин, меняем одно число."],
+["a","void setup() { ... }","Выполняется один раз при старте: настройка пинов."],
+["a","void loop() { ... }","Повторяется бесконечно, основная работа программы."],
+["a","pinMode(pin, OUTPUT)","Пин на выход (управляем светодиодом). INPUT — на вход (читаем датчик)."],
+["a","pinMode(2, INPUT_PULLUP);","Вход со встроенной подтяжкой к 5 В. Не нажата = 1, нажата = 0."],
+["a","digitalWrite(pin, HIGH)","Подать 5 В (светодиод горит). LOW — 0 В."],
+["a","delay(1000);","Пауза в миллисекундах (1000 = 1 с), программа стоит."],
+["a","Serial.begin(9600);","Включает обмен с компьютером на скорости 9600 бит/с."],
+["a","Serial.println(x);","Вывод в Serial Monitor с переходом на новую строку (print — без перехода)."],
+["a","LED_BUILTIN","Это пин 13: встроенный светодиод платы."],
+["a","for (int i = 0; i < 3; i++)","Цикл на 3 повтора (i = 0, 1, 2)."],
+["a","int leds[3] = {11, 12, 13};","Массив пинов: leds[0] = 11. Циклом настраиваем и зажигаем по очереди (бегущий огонь)."],
+["a","analogWrite(9, 128);","ШИМ 0–255: чем больше число, тем ярче. Только на пинах 3, 5, 6, 9, 10, 11 (знак ~)."],
+["a","analogWrite(ledPin2, 255 - brightness);","Противофаза: когда у первого яркость 0, у второго 255."],
+["a","void setColor(int r, int g, int b)","Своя функция: принимает яркость трёх каналов RGB и выводит их через analogWrite."],
+["a","{255, 255, 0}","Цвет в формате (R, G, B): красный + зелёный = жёлтый."],
+["a","digitalRead(2)","Читает цифровой пин: 0 или 1."],
+["a","analogRead(A0)","Читает напряжение числом 0–1023 (10-битный АЦП)."],
+["a","int brightness = potValue / 4;","Переводит диапазон 0–1023 в 0–255 для ШИМ."],
+["a","isOn = !isOn;","! меняет значение на противоположное (было false, стало true)."],
+["a","digitalWrite(ledPin, isOn ? HIGH : LOW);","Если isOn истина, светодиод горит, иначе нет."],
+["a","delay(20);  // в программе с кнопкой","Антидребезг: контакты дрожат и дают лишние срабатывания, пауза их пропускает."],
+["a","unsigned long lastPrintTime = 0;","Время последнего вывода в мс. unsigned long: большое число без знака."],
+["a","millis() - lastPrintTime >= 500","millis() — мс с запуска. Действие раз в 500 мс без delay, программа не останавливается."],
+["a","int minValue = 1023; int maxValue = 0;","Минимум стартует с максимума, максимум с минимума: первое измерение обновит оба."],
+["a","float voltage = sensorValue * 5.0 / 1023.0;","Переводит число 0–1023 в вольты (макс. 5 В)."],
+["a","(voltage - 0.5) * 100","TMP36: смещение 0,5 В при 0 °C и 10 мВ на градус, получаем °C."],
+["a","idx = (idx + 1) % N;","Кольцевой буфер: после N−1 индекс возвращается к 0, хранятся последние N значений."],
+["a","delayMicroseconds(10);","Пауза 10 мкс: импульс на trig — команда датчику «измерь»."],
+["a","long duration = pulseIn(echoPin, HIGH);","Ждёт эхо и измеряет время сигнала HIGH в микросекундах."],
+["a","distance = duration * 0.034 / 2;","0,034 см/мкс — скорость звука. Делим на 2: сигнал шёл туда и обратно. Итог в см."],
+["a","//","Комментарий: программа его игнорирует."]
+];
+function deck(){
+ app.innerHTML="";
+ app.append(el(`<h1>📇 Карточки</h1><p class="sub">Прочитай строку, вспомни значение, переверни. «Знаю» убирает карточку, «Ещё раз» возвращает её через пару карт.</p>`));
+ [["c","C++"],["a","Arduino"],["all","Всё вместе"]].forEach(([k,n])=>{
+  const p=C.filter(x=>k==="all"||x[0]===k),kn=p.filter(x=>S.kn.includes(x[1])).length;
+  const b=document.createElement("button");b.className="mode";b.innerHTML=`<b>${n}</b><small>выучено ${kn} из ${p.length}</small>`;b.onclick=()=>cards(k);app.append(b)});
+ const r=document.createElement("button");r.className="ghost";r.textContent="Сбросить прогресс карточек";r.onclick=()=>{S.kn=[];save();deck()};app.append(r);
+ const h=document.createElement("button");h.className="ghost";h.textContent="← В меню";h.onclick=home;app.append(h);
+}
+function cards(k){
+ const pool=C.filter(x=>k==="all"||x[0]===k);
+ let q=sh(pool.filter(x=>!S.kn.includes(x[1])));
+ if(!q.length){S.kn=S.kn.filter(l=>!pool.some(x=>x[1]===l));q=sh(pool)}
+ const total=pool.length;
+ function show(){
+  app.innerHTML="";
+  const kn=total-q.length;
+  const top=el(`<div class="top"><span>📇 выучено ${kn} из ${total}</span><span>осталось ${q.length}</span></div><div class="bar"><i style="width:${kn/total*100}%"></i></div>`);app.append(top);
+  if(!q.length){app.append(el(`<div class="big">🎉</div><h1 style="text-align:center">Все карточки выучены!</h1>`));
+   S.xp+=total;save();
+   const b=document.createElement("button");b.className="main";b.textContent="К колодам";b.onclick=deck;app.append(b);return}
+  const c=q[0];
+  const pre=document.createElement("pre");pre.textContent=c[1];app.append(pre);
+  app.append(el(`<div class="q">Что делает эта строка?</div>`));
+  const rv=document.createElement("button");rv.className="main";rv.textContent="Показать значение";
+  rv.onclick=()=>{rv.remove();
+   const w=document.createElement("div");w.className="why";w.textContent=c[2];app.append(w);
+   const y=document.createElement("button");y.className="main";y.textContent="✅ Знаю";
+   y.onclick=()=>{q.shift();if(!S.kn.includes(c[1]))S.kn.push(c[1]);save();show()};
+   const n=document.createElement("button");n.className="ghost";n.textContent="🔁 Ещё раз";
+   n.onclick=()=>{q.shift();q.splice(Math.min(3,q.length),0,c);show()};
+   app.append(y,n)};
+  app.append(rv);
+  const h=document.createElement("button");h.className="ghost";h.textContent="← К колодам";h.onclick=deck;app.append(h);
+ }
+ show();
+}
+home();
+</script></body></html>
